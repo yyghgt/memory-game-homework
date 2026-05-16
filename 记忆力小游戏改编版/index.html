@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>30秒限时记忆卡牌</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1 class="logo">限时记忆卡牌配对</h1>
+    <!-- 倒计时区域 -->
+    <div class="time-box">剩余时间：<span id="timer">30</span> 秒</div>
+    <!-- 游戏提示 -->
+    <div class="tip-text" id="tipText">点击开始游戏</div>
+
+    <div class="game-box" id="gameBox"></div>
+    <button class="startBtn" id="startBtn">开始游戏</button>
+
+    <script>
+        const cardArr = ['🍎','🍌','🍇','🍓','🍎','🍌','🍇','🍓'];
+        let isStart = false;
+        let openCard = [];
+        let lockClick = false;
+        let timer = null;
+        let leftTime = 30;
+        let matchNum = 0;
+        const totalPair = cardArr.length / 2;
+
+        // 洗牌
+        function shuffle(arr){
+            return arr.sort(()=>Math.random()-0.5);
+        }
+
+        // 渲染卡牌
+        function renderCard(){
+            const gameBox = document.getElementById('gameBox');
+            gameBox.innerHTML = '';
+            let newArr = shuffle([...cardArr]);
+            newArr.forEach(item=>{
+                let card = document.createElement('div');
+                card.className = 'card-item';
+                card.innerHTML = `
+                    <div class="card-front"></div>
+                    <div class="card-back">${item}</div>
+                `;
+                card.addEventListener('click',flipCard);
+                gameBox.appendChild(card);
+            })
+        }
+
+        // 翻牌逻辑
+        function flipCard(){
+            if(!isStart || lockClick) return;
+            if(this.classList.contains('active')) return;
+
+            this.classList.add('active');
+            openCard.push(this);
+
+            if(openCard.length === 2){
+                lockClick = true;
+                let c1 = openCard[0].querySelector('.card-back').innerText;
+                let c2 = openCard[1].querySelector('.card-back').innerText;
+                
+                if(c1 === c2){
+                    matchNum++;
+                    openCard = [];
+                    lockClick = false;
+                    // 全部配对完成
+                    if(matchNum === totalPair){
+                        gameWin();
+                    }
+                }else{
+                    setTimeout(()=>{
+                        openCard.forEach(el=>el.classList.remove('active'));
+                        openCard = [];
+                        lockClick = false;
+                    },600)
+                }
+            }
+        }
+
+        // 开始倒计时
+        function startCountDown(){
+            leftTime = 30;
+            document.getElementById('timer').innerText = leftTime;
+            clearInterval(timer);
+            timer = setInterval(()=>{
+                leftTime--;
+                document.getElementById('timer').innerText = leftTime;
+                if(leftTime <= 0){
+                    gameOver();
+                }
+            },1000)
+        }
+
+        // 游戏胜利
+        function gameWin(){
+            clearInterval(timer);
+            isStart = false;
+            document.getElementById('tipText').innerText = '🎉 恭喜！30秒内闯关成功！';
+            document.getElementById('startBtn').innerText = '重新开始';
+        }
+
+        // 游戏超时失败
+        function gameOver(){
+            clearInterval(timer);
+            isStart = false;
+            lockClick = true;
+            document.getElementById('tipText').innerText = '⏰ 时间到！游戏失败';
+            document.getElementById('startBtn').innerText = '重新开始';
+        }
+
+        // 开始游戏按钮
+        document.getElementById('startBtn').addEventListener('click',()=>{
+            isStart = true;
+            lockClick = false;
+            matchNum = 0;
+            openCard = [];
+            document.getElementById('tipText').innerText = '抓紧时间，快速配对！';
+            renderCard();
+            startCountDown();
+        })
+    </script>
+</body>
+</html>
